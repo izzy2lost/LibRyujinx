@@ -6,5 +6,10 @@
     <string>development</string> <!-- Use 'development' for sideloading -->
     <key>signingStyle</key>
     <string>manual</string> <!-- Use manual signing -->
+    <key>exportOptions</key>
+    <dict>
+        <key>provisioningProfiles</key>
+        <dict/>
+    </dict>
 </dict>
 </plist>
