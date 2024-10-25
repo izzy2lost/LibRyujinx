@@ -1,4 +1,4 @@
-name: iOS Build for Sideloading
+name: iOS Build for Sideloading (Unsigned)
 
 on:
   workflow_dispatch:
@@ -11,40 +11,35 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v2
 
-      - name: Set up Ruby 3.1
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.3'
-          bundler-cache: true
-
-      - name: Install dependencies
-        run: |
-          gem install cocoapods
-
       - name: Set up Xcode
         run: sudo xcode-select -switch /Applications/Xcode.app/Contents/Developer
 
-      - name: Build the app
+      - name: Build the app (Unsigned)
         run: |
           xcodebuild -workspace src/RyujinxiOS/Ryujinx.xcodeproj/project.xcworkspace \
                      -scheme Ryujinx \
                      -sdk iphoneos \
                      -configuration Release \
                      -archivePath $PWD/build/Ryujinx.xcarchive \
+                     CODE_SIGN_IDENTITY="" \
+                     CODE_SIGNING_REQUIRED=NO \
+                     CODE_SIGN_ENTITLEMENTS="" \
+                     CODE_SIGNING_ALLOWED=NO \
                      archive
 
-      - name: Export IPA
-        env:
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APP_SPECIFIC_PASSWORD: ${{ secrets.APP_SPECIFIC_PASSWORD }}
+      - name: Export Unsigned IPA
         run: |
           xcodebuild -exportArchive \
                      -archivePath $PWD/build/Ryujinx.xcarchive \
                      -exportPath $PWD/build \
-                     -exportOptionsPlist src/RyujinxiOS/ExportOptions.plist
+                     -exportOptionsPlist src/RyujinxiOS/ExportOptions.plist \
+                     CODE_SIGN_IDENTITY="" \
+                     CODE_SIGNING_REQUIRED=NO \
+                     CODE_SIGN_ENTITLEMENTS="" \
+                     CODE_SIGNING_ALLOWED=NO
 
-      - name: Upload IPA
+      - name: Upload Unsigned IPA
         uses: actions/upload-artifact@v4
         with:
-          name: Ryujinx.ipa
+          name: Ryujinx-unsigned.ipa
           path: build/Ryujinx.ipa
