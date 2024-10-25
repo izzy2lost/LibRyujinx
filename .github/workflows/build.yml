@@ -22,27 +22,19 @@ jobs:
       - name: Build the app (Unsigned)
         run: |
           xcodebuild -workspace src/RyujinxiOS/Ryujinx.xcodeproj/project.xcworkspace \
-                     -scheme Ryujinx \
-                     -sdk iphoneos \
-                     -configuration Release \
-                     -archivePath $PWD/build/Ryujinx.xcarchive \
-                     CODE_SIGN_IDENTITY="" \
-                     CODE_SIGNING_REQUIRED=NO \
-                     CODE_SIGN_ENTITLEMENTS="" \
-                     CODE_SIGNING_ALLOWED=NO \
-                     archive
+           -scheme Ryujinx \
+           -sdk iphoneos \
+           -configuration Release \
+           -archivePath $PWD/build/Ryujinx.xcarchive \
+           archive CODE_SIGNING_ALLOWED=NO
 
       - name: Export Unsigned IPA
         run: |
           xcodebuild -exportArchive \
-                     -archivePath $PWD/build/Ryujinx.xcarchive \
-                     -exportPath $PWD/build \
-                     -exportOptionsPlist src/RyujinxiOS/ExportOptions.plist \
-                     CODE_SIGN_IDENTITY="" \
-                     CODE_SIGNING_REQUIRED=NO \
-                     CODE_SIGN_ENTITLEMENTS="" \
-                     CODE_SIGNING_ALLOWED=NO
-
+           -archivePath $PWD/build/Ryujinx.xcarchive \
+           -exportPath $PWD/build \
+           -exportOptionsPlist src/RyujinxiOS/ExportOptions.plist
+           
       - name: Upload Unsigned IPA
         uses: actions/upload-artifact@v4
         with:
