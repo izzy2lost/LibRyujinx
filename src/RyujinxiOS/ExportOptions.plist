@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>ad-hoc</string> <!-- Use 'ad-hoc' to skip team and signing -->
+    <string>release-testing</string> <!-- Use 'release-testing' to avoid team requirement -->
     <key>signingStyle</key>
     <string>manual</string>
 </dict>
