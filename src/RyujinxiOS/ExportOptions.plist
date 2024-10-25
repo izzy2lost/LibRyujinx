@@ -3,13 +3,8 @@
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>development</string> <!-- Use 'development' for sideloading -->
+    <string>ad-hoc</string> <!-- Use 'ad-hoc' to skip team and signing -->
     <key>signingStyle</key>
-    <string>manual</string> <!-- Use manual signing -->
-    <key>exportOptions</key>
-    <dict>
-        <key>provisioningProfiles</key>
-        <dict/>
-    </dict>
+    <string>manual</string>
 </dict>
 </plist>
