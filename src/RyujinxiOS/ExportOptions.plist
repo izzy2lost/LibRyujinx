@@ -4,12 +4,7 @@
 <dict>
     <key>method</key>
     <string>development</string> <!-- Use 'development' for sideloading -->
-    <key>teamID</key>
     <key>signingStyle</key>
     <string>manual</string> <!-- Use manual signing -->
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>org.ryujinx.Ryujinx</key>
-    </dict>
 </dict>
 </plist>
