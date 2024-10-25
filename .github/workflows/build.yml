@@ -14,6 +14,11 @@ jobs:
       - name: Set up Xcode
         run: sudo xcode-select -switch /Applications/Xcode.app/Contents/Developer
 
+      - name: Build LibRyujinx
+        run: |
+          cd src/LibRyujinx
+          dotnet publish -c Release -r ios-arm64
+
       - name: Build the app (Unsigned)
         run: |
           xcodebuild -workspace src/RyujinxiOS/Ryujinx.xcodeproj/project.xcworkspace \
