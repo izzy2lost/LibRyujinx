@@ -30,13 +30,11 @@ jobs:
 
       - name: Export Unsigned IPA
         run: |
-          xcodebuild -exportArchive \
-           -archivePath $PWD/build/Ryujinx.xcarchive \
-           -exportPath $PWD/build \
-           -exportOptionsPlist src/RyujinxiOS/ExportOptions.plist
+          cd $PWD/build/Ryujinx.xcarchive/Products/Applications
+          zip -r $GITHUB_WORKSPACE/build/Ryujinx-unsigned.ipa Ryujinx.app
            
       - name: Upload Unsigned IPA
         uses: actions/upload-artifact@v4
         with:
           name: Ryujinx-unsigned.ipa
-          path: build/Ryujinx.ipa
+          path: build/Ryujinx-unsigned.ipa
