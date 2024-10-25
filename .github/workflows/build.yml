@@ -11,11 +11,11 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v2
 
-      - name: Set up Ruby (for Cocoapods)
-        uses: ruby/setup-ruby@v1
+      - name: Set up Ruby 3.1
+        uses: actions/setup-ruby@v1
         with:
-          ruby-version: '2.7'
-
+         ruby-version: '3.1'
+        
       - name: Install dependencies
         run: |
           gem install cocoapods
