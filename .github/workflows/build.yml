@@ -14,9 +14,9 @@ jobs:
       - name: Set up Ruby 3.1
         uses: ruby/setup-ruby@v1
         with:
-         ruby-version: '3.3' # Not needed with a `.ruby-version` or `.tool-versions`
-         bundler-cache: true # runs 'bundle install' and caches installed gems automatically
-        
+          ruby-version: '3.3'
+          bundler-cache: true
+
       - name: Install dependencies
         run: |
           gem install cocoapods
