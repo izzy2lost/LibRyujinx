@@ -20,7 +20,6 @@ jobs:
       - name: Install dependencies
         run: |
           gem install cocoapods
-          pod install --project-directory=src/RyujinxiOS
 
       - name: Set up Xcode
         run: sudo xcode-select -switch /Applications/Xcode.app/Contents/Developer
