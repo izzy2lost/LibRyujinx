@@ -49,7 +49,7 @@ jobs:
           CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
           CCACHE_COMPILERCHECK: "string:${{ env.NDK_VERSION }}"
           PR_NUMBER: ${{ github.event.number }}
-        run: ./src/RyujinxAndroid/gradlew --no-daemon --stacktrace --build-cache --parallel --configure-on-demand -p src/RyujinxAndroid assembleRelease assembleReldebug
+        run: ./src/RyujinxAndroid/gradlew --no-daemon --stacktrace --build-cache --parallel --configure-on-demand -p src/RyujinxAndroid assembleRelease assembledebug
 
       - name: Rename APKs
         run: |
