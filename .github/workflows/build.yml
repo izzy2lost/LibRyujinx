@@ -28,13 +28,16 @@ jobs:
            -archivePath $PWD/build/Ryujinx.xcarchive \
            archive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
 
+      - name: Verify .app Directory
+        run: |
+          ls build/Ryujinx.xcarchive/Products/Applications
+
       - name: Create IPA Package
         run: |
           mkdir -p Payload
           cp -r build/Ryujinx.xcarchive/Products/Applications/Ryujinx.app Payload/
-          cd Payload
-          zip -r ../Ryujinx-unsigned.ipa Ryujinx.app
-          cd ..
+          ls Payload  # Check that Ryujinx.app is copied correctly
+          zip -r Ryujinx-unsigned.ipa Payload
 
       - name: Upload Unsigned IPA
         uses: actions/upload-artifact@v4
