@@ -1,0 +1,53 @@
+name: Build Libraries
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-libraries:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    # Install dependencies for building libraries
+    - name: Install dependencies
+      run: sudo apt-get update && sudo apt-get install -y build-essential wget cmake
+
+    # Build zlib
+    - name: Build zlib
+      run: |
+        wget https://github.com/madler/zlib/archive/refs/tags/v1.2.11.tar.gz -O zlib-1.2.11.tar.gz
+        tar -xvzf zlib-1.2.11.tar.gz
+        cd zlib-1.2.11
+        ./configure
+        make
+        cp libz.so ../libz.so
+
+    # Create stubs for other libraries
+    - name: Create stub libraries
+      run: |
+        echo "void dummy() {}" > dummy.c
+        clang -shared -o liblog.so dummy.c
+        clang -shared -o libdl.so dummy.c
+        clang -shared -o libm.so dummy.c
+        clang -shared -o libgcc.so dummy.c
+        clang -shared -o libc.so dummy.c
+        mv liblog.so libdl.so libm.so libgcc.so libc.so ..
+
+    # Upload compiled libraries as an artifact
+    - name: Upload Libraries
+      uses: actions/upload-artifact@v3
+      with:
+        name: compiled-libraries
+        path: |
+          libz.so
+          liblog.so
+          libdl.so
+          libm.so
+          libgcc.so
+          libc.so
