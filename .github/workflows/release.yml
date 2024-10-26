@@ -1,218 +1,70 @@
-name: Release job
+# A workflow to build and upload APKs for pull requests
+name: PR Build
 
 on:
   workflow_dispatch:
-    inputs: {}
-  push:
-    branches: [ master ]
-    paths-ignore:
-      - '.github/**'
-      - '*.yml'
-      - '*.json'
-      - '*.config'
-      - 'README.md'
 
-concurrency: release
-
-env:
-  POWERSHELL_TELEMETRY_OPTOUT: 1
-  DOTNET_CLI_TELEMETRY_OPTOUT: 1
-  RYUJINX_BASE_VERSION: "1.1"
-  RYUJINX_TARGET_RELEASE_CHANNEL_NAME: "master"
-  RYUJINX_TARGET_RELEASE_CHANNEL_OWNER: "Ryujinx"
-  RYUJINX_TARGET_RELEASE_CHANNEL_REPO: "release-channel-master"
+# Only allow the latest build to run for a given PR, and cancel any previous builds
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  tag:
-    name: Create tag
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Get version info
-        id: version_info
-        run: |
-          echo "build_version=${{ env.RYUJINX_BASE_VERSION }}.${{ github.run_number }}" >> $GITHUB_OUTPUT
-        shell: bash
-
-      - name: Create tag
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'refs/tags/${{ steps.version_info.outputs.build_version }}',
-              sha: context.sha
-            })
-
-  release:
-    name: Release ${{ matrix.OS_NAME }}
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ fromJSON(vars.JOB_TIMEOUT) }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest ]
-        include:
-          - os: ubuntu-latest
-            OS_NAME: Linux x64
-            DOTNET_RUNTIME_IDENTIFIER: linux-x64
-            RELEASE_ZIP_OS_NAME: linux_x64
-
-          - os: windows-latest
-            OS_NAME: Windows x64
-            DOTNET_RUNTIME_IDENTIFIER: win-x64
-            RELEASE_ZIP_OS_NAME: win_x64
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-dotnet@v4
-        with:
-          global-json-file: global.json
-          
-      - name: Overwrite csc problem matcher
-        run: echo "::add-matcher::.github/csc.json"
-
-      - name: Get version info
-        id: version_info
-        run: |
-          echo "build_version=${{ env.RYUJINX_BASE_VERSION }}.${{ github.run_number }}" >> $GITHUB_OUTPUT
-          echo "git_short_hash=$(git rev-parse --short "${{ github.sha }}")" >> $GITHUB_OUTPUT
-        shell: bash
-
-      - name: Configure for release
-        run: |
-          sed -r --in-place 's/\%\%RYUJINX_BUILD_VERSION\%\%/${{ steps.version_info.outputs.build_version }}/g;' src/Ryujinx.Common/ReleaseInformation.cs
-          sed -r --in-place 's/\%\%RYUJINX_BUILD_GIT_HASH\%\%/${{ steps.version_info.outputs.git_short_hash }}/g;' src/Ryujinx.Common/ReleaseInformation.cs
-          sed -r --in-place 's/\%\%RYUJINX_TARGET_RELEASE_CHANNEL_NAME\%\%/${{ env.RYUJINX_TARGET_RELEASE_CHANNEL_NAME }}/g;' src/Ryujinx.Common/ReleaseInformation.cs
-          sed -r --in-place 's/\%\%RYUJINX_TARGET_RELEASE_CHANNEL_OWNER\%\%/${{ env.RYUJINX_TARGET_RELEASE_CHANNEL_OWNER }}/g;' src/Ryujinx.Common/ReleaseInformation.cs
-          sed -r --in-place 's/\%\%RYUJINX_TARGET_RELEASE_CHANNEL_REPO\%\%/${{ env.RYUJINX_TARGET_RELEASE_CHANNEL_REPO }}/g;' src/Ryujinx.Common/ReleaseInformation.cs
-        shell: bash
-
-      - name: Create output dir
-        run: "mkdir release_output"
-
-      - name: Publish
-        run: |
-          dotnet publish -c Release -r "${{ matrix.DOTNET_RUNTIME_IDENTIFIER }}" -o ./publish_gtk/publish -p:Version="${{ steps.version_info.outputs.build_version }}" -p:SourceRevisionId="${{ steps.version_info.outputs.git_short_hash }}" -p:DebugType=embedded src/Ryujinx --self-contained true
-          dotnet publish -c Release -r "${{ matrix.DOTNET_RUNTIME_IDENTIFIER }}" -o ./publish_sdl2_headless/publish -p:Version="${{ steps.version_info.outputs.build_version }}" -p:SourceRevisionId="${{ steps.version_info.outputs.git_short_hash }}" -p:DebugType=embedded src/Ryujinx.Headless.SDL2 --self-contained true
-          dotnet publish -c Release -r "${{ matrix.DOTNET_RUNTIME_IDENTIFIER }}" -o ./publish_ava/publish -p:Version="${{ steps.version_info.outputs.build_version }}" -p:SourceRevisionId="${{ steps.version_info.outputs.git_short_hash }}" -p:DebugType=embedded src/Ryujinx.Ava --self-contained true
-
-      - name: Packing Windows builds
-        if: matrix.os == 'windows-latest'
-        run: |
-          pushd publish_gtk
-          7z a ../release_output/ryujinx-${{ steps.version_info.outputs.build_version }}-win_x64.zip publish
-          popd
-
-          pushd publish_sdl2_headless
-          7z a ../release_output/sdl2-ryujinx-headless-${{ steps.version_info.outputs.build_version }}-win_x64.zip publish
-          popd
-
-          pushd publish_ava
-          7z a ../release_output/test-ava-ryujinx-${{ steps.version_info.outputs.build_version }}-win_x64.zip publish
-          popd
-        shell: bash
-
-      - name: Packing Linux builds
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          pushd publish_gtk
-          chmod +x publish/Ryujinx.sh publish/Ryujinx
-          tar -czvf ../release_output/ryujinx-${{ steps.version_info.outputs.build_version }}-linux_x64.tar.gz publish
-          popd
-
-          pushd publish_sdl2_headless
-          chmod +x publish/Ryujinx.sh publish/Ryujinx.Headless.SDL2
-          tar -czvf ../release_output/sdl2-ryujinx-headless-${{ steps.version_info.outputs.build_version }}-linux_x64.tar.gz publish
-          popd
-
-          pushd publish_ava
-          chmod +x publish/Ryujinx.sh publish/Ryujinx.Ava
-          tar -czvf ../release_output/test-ava-ryujinx-${{ steps.version_info.outputs.build_version }}-linux_x64.tar.gz publish
-          popd
-        shell: bash
-
-      - name: Pushing new release
-        uses: ncipollo/release-action@v1
-        with:
-          name: ${{ steps.version_info.outputs.build_version }}
-          artifacts: "release_output/*.tar.gz,release_output/*.zip"
-          tag: ${{ steps.version_info.outputs.build_version }}
-          body: "For more information about this release please check out the official [Changelog](https://github.com/Ryujinx/Ryujinx/wiki/Changelog)."
-          omitBodyDuringUpdate: true
-          allowUpdates: true
-          replacesArtifacts: true
-          owner: ${{ env.RYUJINX_TARGET_RELEASE_CHANNEL_OWNER }}
-          repo: ${{ env.RYUJINX_TARGET_RELEASE_CHANNEL_REPO }}
-          token: ${{ secrets.RELEASE_TOKEN }}
-
-  macos_release:
-    name: Release MacOS universal
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ fromJSON(vars.JOB_TIMEOUT) }}
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-dotnet@v4
+      - name: Git Checkout
+        uses: actions/checkout@v4
         with:
-          global-json-file: global.json
+          submodules: recursive
 
-      - name: Setup LLVM 15
-        run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 15
+      - name: Restore CCache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          max-size: 3Gi
 
-      - name: Install rcodesign
+      - name: Restore Gradle Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('app/**/*.xml') }}-${{ hashFiles('app/**.kt', 'app/**.java') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('app/**/*.xml') }}-
+            ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-
+            ${{ runner.os }}-gradle-
+
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin' # Temurin should come pre-installed on GitHub-hosted runners
+          java-version: '17'
+
+      - name: Install Ninja Build
         run: |
-          mkdir -p $HOME/.bin
-          gh release download -R indygreg/apple-platform-rs -O apple-codesign.tar.gz -p 'apple-codesign-*-x86_64-unknown-linux-musl.tar.gz'
-          tar -xzvf apple-codesign.tar.gz --wildcards '*/rcodesign' --strip-components=1
-          rm apple-codesign.tar.gz
-          mv rcodesign $HOME/.bin/
-          echo "$HOME/.bin" >> $GITHUB_PATH
+          sudo apt-get install -y ninja-build
+          ln -s /usr/bin/ninja .
+
+      - name: Android Assemble
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CMAKE_C_COMPILER_LAUNCHER: "ccache"
+          CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
+          CCACHE_COMPILERCHECK: "string:${{ env.NDK_VERSION }}" # Use NDK version instead of compiler timestamp
+          PR_NUMBER: ${{ github.event.number }}
+        run: ./src/RyujinxAndroid/gradlew --no-daemon --stacktrace --build-cache --parallel --configure-on-demand assembleDevRelease assembleDevReldebug
 
-      - name: Get version info
-        id: version_info
+      - name: Rename APKs
         run: |
-          echo "build_version=${{ env.RYUJINX_BASE_VERSION }}.${{ github.run_number }}" >> $GITHUB_OUTPUT
-          echo "git_short_hash=$(git rev-parse --short "${{ github.sha }}")" >> $GITHUB_OUTPUT
+          mv app/build/outputs/apk/dev/release/app-dev-release.apk strato-pr${{ github.event.number }}-release.apk
+          mv app/build/outputs/apk/dev/reldebug/app-dev-reldebug.apk strato-pr${{ github.event.number }}-reldebug.apk
 
-      - name: Configure for release
-        run: |
-          sed -r --in-place 's/\%\%RYUJINX_BUILD_VERSION\%\%/${{ steps.version_info.outputs.build_version }}/g;' src/Ryujinx.Common/ReleaseInformation.cs
-          sed -r --in-place 's/\%\%RYUJINX_BUILD_GIT_HASH\%\%/${{ steps.version_info.outputs.git_short_hash }}/g;' src/Ryujinx.Common/ReleaseInformation.cs
-          sed -r --in-place 's/\%\%RYUJINX_TARGET_RELEASE_CHANNEL_NAME\%\%/${{ env.RYUJINX_TARGET_RELEASE_CHANNEL_NAME }}/g;' src/Ryujinx.Common/ReleaseInformation.cs
-          sed -r --in-place 's/\%\%RYUJINX_TARGET_RELEASE_CHANNEL_OWNER\%\%/${{ env.RYUJINX_TARGET_RELEASE_CHANNEL_OWNER }}/g;' src/Ryujinx.Common/ReleaseInformation.cs
-          sed -r --in-place 's/\%\%RYUJINX_TARGET_RELEASE_CHANNEL_REPO\%\%/${{ env.RYUJINX_TARGET_RELEASE_CHANNEL_REPO }}/g;' src/Ryujinx.Common/ReleaseInformation.cs
-        shell: bash
-
-      - name: Publish macOS Ryujinx.Ava
-        run: |
-          ./distribution/macos/create_macos_build_ava.sh . publish_tmp_ava publish_ava ./distribution/macos/entitlements.xml "${{ steps.version_info.outputs.build_version }}" "${{ steps.version_info.outputs.git_short_hash }}" Release
-          
-      - name: Publish macOS Ryujinx.Headless.SDL2
-        run: |
-          ./distribution/macos/create_macos_build_headless.sh . publish_tmp_headless publish_headless ./distribution/macos/entitlements.xml "${{ steps.version_info.outputs.build_version }}" "${{ steps.version_info.outputs.git_short_hash }}" Release
-
-      - name: Pushing new release
-        uses: ncipollo/release-action@v1
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.version_info.outputs.build_version }}
-          artifacts: "publish_ava/*.tar.gz, publish_headless/*.tar.gz"
-          tag: ${{ steps.version_info.outputs.build_version }}
-          body: "For more information about this release please check out the official [Changelog](https://github.com/Ryujinx/Ryujinx/wiki/Changelog)."
-          omitBodyDuringUpdate: true
-          allowUpdates: true
-          replacesArtifacts: true
-          owner: ${{ env.RYUJINX_TARGET_RELEASE_CHANNEL_OWNER }}
-          repo: ${{ env.RYUJINX_TARGET_RELEASE_CHANNEL_REPO }}
-          token: ${{ secrets.RELEASE_TOKEN }}
+          name: strato-pr${{ github.event.number }}-release.apk
+          path: strato-pr${{ github.event.number }}-release.apk
 
-  flatpak_release:
-    uses: ./.github/workflows/flatpak.yml
-    needs: release
-    with:
-      ryujinx_version: "1.1.${{ github.run_number }}"
-    secrets: inherit
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: strato-pr${{ github.event.number }}-reldebug.apk
+          path: strato-pr${{ github.event.number }}-reldebug.apk
