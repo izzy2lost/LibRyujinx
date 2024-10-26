@@ -17,6 +17,11 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld libc6-dev libgcc-9-dev liblog4cxx-dev zlib1g-dev
+
       - name: Restore CCache
         uses: hendrikmuhs/ccache-action@v1.2
         with:
@@ -49,12 +54,12 @@ jobs:
           CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
           CCACHE_COMPILERCHECK: "string:${{ env.NDK_VERSION }}"
           PR_NUMBER: ${{ github.event.number }}
-        run: ./src/RyujinxAndroid/gradlew --no-daemon --stacktrace --build-cache --parallel --configure-on-demand -p src/RyujinxAndroid assembleRelease assembledebug
+        run: ./src/RyujinxAndroid/gradlew --no-daemon --stacktrace --build-cache --parallel --configure-on-demand -p src/RyujinxAndroid assembleRelease assembleDebug
 
       - name: Rename APKs
         run: |
           mv src/RyujinxAndroid/app/build/outputs/apk/release/app-release.apk strato-pr${{ github.event.number }}-release.apk
-          mv src/RyujinxAndroid/app/build/outputs/apk/reldebug/app-reldebug.apk strato-pr${{ github.event.number }}-reldebug.apk
+          mv src/RyujinxAndroid/app/build/outputs/apk/debug/app-debug.apk strato-pr${{ github.event.number }}-debug.apk
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
@@ -65,5 +70,5 @@ jobs:
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: strato-pr${{ github.event.number }}-reldebug.apk
-          path: strato-pr${{ github.event.number }}-reldebug.apk
+          name: strato-pr${{ github.event.number }}-debug.apk
+          path: strato-pr${{ github.event.number }}-debug.apk
