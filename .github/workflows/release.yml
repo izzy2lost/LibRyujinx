@@ -49,12 +49,12 @@ jobs:
           CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
           CCACHE_COMPILERCHECK: "string:${{ env.NDK_VERSION }}"
           PR_NUMBER: ${{ github.event.number }}
-        run: ./src/RyujinxAndroid/gradlew --no-daemon --stacktrace --build-cache --parallel --configure-on-demand -p src/RyujinxAndroid assembleDevRelease assembleDevReldebug
+        run: ./src/RyujinxAndroid/gradlew --no-daemon --stacktrace --build-cache --parallel --configure-on-demand -p src/RyujinxAndroid assembleRelease assembleReldebug
 
       - name: Rename APKs
         run: |
-          mv src/RyujinxAndroid/app/build/outputs/apk/dev/release/app-dev-release.apk strato-pr${{ github.event.number }}-release.apk
-          mv src/RyujinxAndroid/app/build/outputs/apk/dev/reldebug/app-dev-reldebug.apk strato-pr${{ github.event.number }}-reldebug.apk
+          mv src/RyujinxAndroid/app/build/outputs/apk/release/app-release.apk strato-pr${{ github.event.number }}-release.apk
+          mv src/RyujinxAndroid/app/build/outputs/apk/reldebug/app-reldebug.apk strato-pr${{ github.event.number }}-reldebug.apk
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
