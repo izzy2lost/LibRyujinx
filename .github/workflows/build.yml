@@ -27,7 +27,7 @@ jobs:
           <plist version="1.0">
           <dict>
             <key>method</key>
-            <string>ad-hoc</string>
+            <string>release-testing</string> <!-- Switch to development or release-testing -->
             <key>signingStyle</key>
             <string>manual</string>
             <key>compileBitcode</key>
@@ -45,7 +45,7 @@ jobs:
            -sdk iphoneos \
            -configuration Release \
            -archivePath $PWD/build/Ryujinx.xcarchive \
-           archive CODE_SIGNING_ALLOWED=NO
+           archive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
 
       - name: Export Unsigned IPA
         run: |
