@@ -1,4 +1,3 @@
-# A workflow to build and upload APKs for pull requests
 name: PR Build
 
 on:
@@ -27,16 +26,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.gradle/
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('app/**/*.xml') }}-${{ hashFiles('app/**.kt', 'app/**.java') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('src/RyujinxAndroid/app/**/*.xml') }}-${{ hashFiles('src/RyujinxAndroid/app/**.kt', 'src/RyujinxAndroid/app/**.java') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('app/**/*.xml') }}-
+            ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-${{ hashFiles('src/RyujinxAndroid/app/**/*.xml') }}-
             ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle') }}-
             ${{ runner.os }}-gradle-
 
       - name: Install Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin' # Temurin should come pre-installed on GitHub-hosted runners
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Install Ninja Build
@@ -48,14 +47,14 @@ jobs:
         env:
           CMAKE_C_COMPILER_LAUNCHER: "ccache"
           CMAKE_CXX_COMPILER_LAUNCHER: "ccache"
-          CCACHE_COMPILERCHECK: "string:${{ env.NDK_VERSION }}" # Use NDK version instead of compiler timestamp
+          CCACHE_COMPILERCHECK: "string:${{ env.NDK_VERSION }}"
           PR_NUMBER: ${{ github.event.number }}
-        run: ./src/RyujinxAndroid/gradlew --no-daemon --stacktrace --build-cache --parallel --configure-on-demand assembleDevRelease assembleDevReldebug
+        run: ./src/RyujinxAndroid/gradlew --no-daemon --stacktrace --build-cache --parallel --configure-on-demand -p src/RyujinxAndroid assembleDevRelease assembleDevReldebug
 
       - name: Rename APKs
         run: |
-          mv app/build/outputs/apk/dev/release/app-dev-release.apk strato-pr${{ github.event.number }}-release.apk
-          mv app/build/outputs/apk/dev/reldebug/app-dev-reldebug.apk strato-pr${{ github.event.number }}-reldebug.apk
+          mv src/RyujinxAndroid/app/build/outputs/apk/dev/release/app-dev-release.apk strato-pr${{ github.event.number }}-release.apk
+          mv src/RyujinxAndroid/app/build/outputs/apk/dev/reldebug/app-dev-reldebug.apk strato-pr${{ github.event.number }}-reldebug.apk
 
       - name: Upload Release APK
         uses: actions/upload-artifact@v4
